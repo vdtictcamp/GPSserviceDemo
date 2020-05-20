@@ -1,19 +1,14 @@
 package com.example.gpsservicedemo;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
-import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
-import android.provider.Settings;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -30,66 +25,46 @@ public class MainActivity extends AppCompatActivity {
     private double laengengrad;
 
 
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, PackageManager.PERMISSION_GRANTED);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, PackageManager.PERMISSION_GRANTED);
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         btnGetGps = findViewById(R.id.btnGetGps);
         txtAusgabe = findViewById(R.id.txtPostition);
 
-        locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
-        location = getLastBestLocation();
-
-        breitengrad = location.getLatitude();
-        laengengrad = location.getLongitude();
-
-        System.out.println(breitengrad);
-        System.out.println(laengengrad);
-
         btnGetGps.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                location = getLastBestLocation();
+                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+                location = getLocation();
                 txtAusgabe.setText(location.toString());
-
             }
         });
     }
 
-        private Location getLastBestLocation() {
+    private Location getLocation() {
 
-            Location zeroLoca = new Location(locationManager.GPS_PROVIDER);
+        //diese location wird return wen wir keine richtige Location erhalten
+        Location loc = new Location("dummyprovider");
 
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        //testen ob wir die Permission haben
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 
-                Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-                Location locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            //richtige GPS location wird returnt
+            return locationGPS;
 
-                long GPSLocationTime = 0;
-                if (null != locationGPS) { GPSLocationTime = locationGPS.getTime(); }
+        } else {
 
-                long NetLocationTime = 0;
-
-                if (null != locationNet) {
-                    NetLocationTime = locationNet.getTime();
-                }
-
-                if ( 0 < GPSLocationTime - NetLocationTime ) {
-                    System.out.println("gpslocation");
-                    return locationGPS;
-                }
-                else {
-                    System.out.println("netlocation");
-                    return locationNet;
-                }
-
-            }
             System.out.println("error");
-            return zeroLoca;
+            //wen permisson fehlgeschlagen ist dan wird die dummy location returnt
+            return loc;}
+
+    }
 
 
-
-}}
+}
