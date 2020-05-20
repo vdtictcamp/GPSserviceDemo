@@ -24,80 +24,72 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtAusgabe;
     private LocationManager locationManager;
     private LocationListener locationListener;
-    private Context context;
+    private Location location;
+
+    private double breitengrad;
+    private double laengengrad;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        context = this;
-
         btnGetGps = findViewById(R.id.btnGetGps);
         txtAusgabe = findViewById(R.id.txtPostition);
 
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-        locationListener = new LocationListener() {
-            @Override
-            public void onLocationChanged(Location location) {
-                String Slocation = ("\n " + location.getLongitude() + " " + location.getLatitude());
-                txtAusgabe.setText(Slocation);
-            }
 
-            @Override
-            public void onStatusChanged(String s, int i, Bundle bundle) {
+        location = getLastBestLocation();
 
-            }
+        breitengrad = location.getLatitude();
+        laengengrad = location.getLongitude();
 
-            @Override
-            public void onProviderEnabled(String s) {
+        System.out.println(breitengrad);
+        System.out.println(laengengrad);
 
-            }
-
-            @Override
-            public void onProviderDisabled(String s) {
-
-                Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-                startActivity(i);
-            }
-        };
-
-        configure_button();
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        switch (requestCode) {
-            case 10:
-                configure_button();
-                break;
-            default:
-                break;
-        }
-    }
-
-    void configure_button() {
-        // first check for permissions
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
-                        , 10);
-            }
-            return;
-        }
-        // this code won't execute IF permissions are not allowed, because in the line above there is return statement.
         btnGetGps.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
-                //noinspection MissingPermission
-                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION, Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.INTERNET}
-                                , 11);
-                    return;
-                }
-                locationManager.requestLocationUpdates("gps", 5000, 0, locationListener);
+            public void onClick(View v) {
+                location = getLastBestLocation();
+                txtAusgabe.setText(location.toString());
+
             }
-        }
-    });
+        });
+    }
+
+        private Location getLastBestLocation() {
+
+            Location zeroLoca = new Location(locationManager.GPS_PROVIDER);
+
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                Location locationNet = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+                long GPSLocationTime = 0;
+                if (null != locationGPS) { GPSLocationTime = locationGPS.getTime(); }
+
+                long NetLocationTime = 0;
+
+                if (null != locationNet) {
+                    NetLocationTime = locationNet.getTime();
+                }
+
+                if ( 0 < GPSLocationTime - NetLocationTime ) {
+                    System.out.println("gpslocation");
+                    return locationGPS;
+                }
+                else {
+                    System.out.println("netlocation");
+                    return locationNet;
+                }
+
+            }
+            System.out.println("error");
+            return zeroLoca;
+
+
+
 }}
