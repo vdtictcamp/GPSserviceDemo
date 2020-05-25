@@ -2,28 +2,25 @@ package com.example.gpsservicedemo;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-
+import androidx.core.content.ContextCompat;
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 
 public class MainActivity extends AppCompatActivity {
 
     private Button btnGetGps;
     private TextView txtAusgabe;
-    private LocationManager locationManager;
-    private LocationListener locationListener;
-    private Location location;
 
-    private double breitengrad;
-    private double laengengrad;
-
+    private static final int REQUEST_CODE_LOCATION_PERMISSION = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,32 +36,36 @@ public class MainActivity extends AppCompatActivity {
         btnGetGps.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-                location = getLocation();
-                txtAusgabe.setText(location.toString());
+                if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
+                } else {
+                    getCurrentLocation();
+                }
             }
         });
     }
 
-    private Location getLocation() {
+    private void getCurrentLocation(){
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(3000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        LocationServices.getFusedLocationProviderClient(MainActivity.this).requestLocationUpdates(locationRequest, new LocationCallback(){
 
-        //diese location wird return wen wir keine richtige Location erhalten
-        Location loc = new Location("dummyprovider");
-
-        //testen ob wir die Permission haben
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Location locationGPS = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
-            //richtige GPS location wird returnt
-            return locationGPS;
-
-        } else {
-
-            System.out.println("error");
-            //wen permisson fehlgeschlagen ist dan wird die dummy location returnt
-            return loc;}
-
+            @Override
+            public void onLocationResult(LocationResult locationResult){
+                super.onLocationResult(locationResult);
+                LocationServices.getFusedLocationProviderClient(MainActivity.this).removeLocationUpdates(this);
+                if (locationResult != null && locationResult.getLocations().size() > 0) {
+                    int latestLocationIndex = locationResult.getLocations().size() - 1;
+                    double latitude =
+                            locationResult.getLocations().get(latestLocationIndex).getLatitude();
+                    double longitude =
+                            locationResult.getLocations().get(latestLocationIndex).getLongitude();
+                    txtAusgabe.setText(String.format(
+                            "Lattitude: %s\nLongitude: %S", latitude, longitude));
+                }
+            }
+        }, Looper.getMainLooper());
     }
-
-
 }
