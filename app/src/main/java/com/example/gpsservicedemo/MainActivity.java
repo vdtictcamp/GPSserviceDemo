@@ -49,6 +49,8 @@ public class MainActivity extends AppCompatActivity {
         LocationRequest locationRequest = new LocationRequest();
         locationRequest.setInterval(10000);
         locationRequest.setFastestInterval(3000);
+
+        //hier gibt es verschiedene genauigkeitsstufen, welche sich unterschiedlich auf die Batterie auswirken
         locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
         LocationServices.getFusedLocationProviderClient(MainActivity.this).requestLocationUpdates(locationRequest, new LocationCallback(){
 
@@ -62,8 +64,9 @@ public class MainActivity extends AppCompatActivity {
                             locationResult.getLocations().get(latestLocationIndex).getLatitude();
                     double longitude =
                             locationResult.getLocations().get(latestLocationIndex).getLongitude();
+                    String provider = locationResult.getLocations().get(latestLocationIndex).getProvider();
                     txtAusgabe.setText(String.format(
-                            "Lattitude: %s\nLongitude: %S", latitude, longitude));
+                            "Breitengrad: %s\nLängengrad: %S\nProvider: %S", latitude, longitude, provider));
                 }
             }
         }, Looper.getMainLooper());
